@@ -27,11 +27,10 @@ while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
     if len(faces) == 1:
         (x,y,w,h) = faces[0]
         face = frame[y:y+h,x:x+w]
-        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
         cv2.imwrite(PATH+"/img_%02d.jpg"%tag,face)
+        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
         tag = tag+1
-
-    print(tag)
+        print(tag)
     cv2.imshow("camera",frame)
 
 cap.release()
