@@ -148,4 +148,5 @@ while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
         print(recog_face(face))
         frame = face_with_name(frame,face,(x,y))
     cv2.imshow("face",frame)
-
+sess.close()
+cap.release()
