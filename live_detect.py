@@ -10,10 +10,13 @@ PATH_PREFFIX = "./faces/"
 MODEL_PATH = "./model/"
 imgs = []
 labels = []
+names = ["jt","nxw","lfl","ty"]
 size = 64 #规范图片长度
 out_size = None
 batch_size = 100
 batch_num = None
+classifer = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+
 
 def read_data():
     if not os.path.exists(PATH_PREFFIX):
@@ -27,16 +30,15 @@ def read_data():
             print("found path %s"%i)
             cur_index = int(i.split("_")[0])
             y_ = np.zeros([len_])
-            y_[cur_index]=1
-            print(y_)
+            y_[cur_index]=1.0
             for j in os.listdir(PATH_PREFFIX+i):
                 path = PATH_PREFFIX+i+"/"+j
                 print("reading %s"%path)
                 imgs.append(cv2.resize(cv2.imread(path,1),(size,size)))
                 labels.append(y_)
+
 def weight_var(shape):
-    # w = tf.random_normal(shape,stddev=0.1) #标准差0.1
-    w = tf.truncated_normal(shape,stddev=0.1)
+    w = tf.random_normal(shape,stddev=0.1) #标准差0.1
     return tf.Variable(w)
 
 def bias_var(shape):
@@ -62,14 +64,14 @@ def add_cnn_layer ():
     # 第一层池化
     pool_1 = max_pool(conv1)
     # 第一层 drop out 
-    out1 = drop_out(pool_1,0.1) 
+    out1 = drop_out(pool_1,1) 
 
     # 第二层卷积
     w2 = weight_var([3,3,32,64])
     b2 = bias_var([64])
     conv2 = tf.nn.relu(conv2d(out1,w2)+b2)
     pool_2 = max_pool(conv2)
-    out2 = drop_out(pool_2,0.75)
+    out2 = drop_out(pool_2,1)
 
     # 第三层卷积
     w3 = weight_var([3,3,64,64])
@@ -83,7 +85,7 @@ def add_cnn_layer ():
     bf = bias_var([512])
     out3_flat = tf.reshape(out3,[-1,8*8*64])
     flatw_plus_b = tf.nn.relu(tf.matmul(out3_flat,wf)+bf)
-    fout = drop_out(flatw_plus_b,0.8)
+    fout = drop_out(flatw_plus_b,1)
 
     # 输出
     w_out = weight_var([512,out_size])
@@ -91,15 +93,14 @@ def add_cnn_layer ():
     out = tf.add(tf.matmul(fout,w_out),b_out)
     return out
 
-def get_acc():
-    return sess.run(acc,feed_dict={x_holder:test_x,y_holder:test_y})
+def recog_face(face):
+    face = cv2.resize(face,(size,size))
+    result = sess.run(pred,feed_dict={x_holder:[face/255.0]})
+    return names[result[0]]
 
-def save_model(sess):
-    if not os.path.exists(MODEL_PATH):
-        os.mkdir(MODEL_PATH)
-    time_str = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())
-    saver.save(sess,MODEL_PATH+"face_model_"+time_str+".model")
-
+def face_with_name(frame,face,pos):
+    img = cv2.putText(frame,recog_face(face),pos, cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
+    return img
 
 read_data()
 
@@ -122,41 +123,29 @@ batch_num = train_x.shape[0] // batch_size
 train_x = train_x.astype("float32")/255.0
 test_x = test_x.astype("float32")/255.0
 
-# print(train_x[0:2])
-
-print("leng test img : %d"%len(test_y))
-print("leng train img : %d"%len(train_y))
-
-print("out size: %d"%out_size)
 
 #定义 holder
 x_holder = tf.placeholder(tf.float32,[None,size,size,3]) 
 y_holder = tf.placeholder(tf.float32,[None,out_size])
 
-pred = add_cnn_layer()
-
-#损失计算
-cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=pred,labels=y_holder))
-# cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_holder*tf.log(pred),axis=1))
-#训练
-train_step = tf.train.AdamOptimizer(0.01).minimize(cross_entropy)
-#准确度
-acc = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(pred,1),tf.argmax(y_holder,1)),tf.float32))
+out = add_cnn_layer()
+print(out.shape)
+pred = tf.argmax(out,1)
+print(pred.shape)
 
 saver = tf.train.Saver()
+sess = tf.Session()
+saver.restore(sess,tf.train.latest_checkpoint(MODEL_PATH))
+print("模型载入完毕")
+cap = cv2.VideoCapture(0)
+while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
+    flag,frame = cap.read()
+    img_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    faces = classifer.detectMultiScale(img_gray,1.1,3,minSize=(64,64))
+    for (x,y,w,h) in faces:
+        face = frame[y:y+h,x:x+w]
+        cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
+        print(recog_face(face))
+        frame = face_with_name(frame,face,(x,y))
+    cv2.imshow("face",frame)
 
-init = tf.global_variables_initializer()
-print("数据堆个数%d"%batch_num)
-with tf.Session() as sess:
-    sess.run(init)
-    for i in range(100):
-        for j in range(batch_num):
-            X = train_x[j*batch_size:(j+1)*batch_size] 
-            Y = train_y[j*batch_size:(j+1)*batch_size]
-            sess.run(train_step,feed_dict={x_holder:X,y_holder:Y})
-        print(get_acc())
-    if get_acc()<0.9:
-        print("准确度小于0.9,训练失败")
-    else :
-        save_model(sess)
-        print("训练成功,准确度为 %f"%get_acc())
