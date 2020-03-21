@@ -1,9 +1,8 @@
-import cv2
-import tensorflow as tf
 import os
 import numpy as np
+import tensorflow as tf
+import cv2
 import random
-
 PATH_PREFFIX = "./faces/"
 MODEL_PATH = "./model/"
 names = ["jt","nxw","lfl","ty"]
@@ -87,10 +86,6 @@ def recog_face(face):
     result = sess.run(pred,feed_dict={x_holder:[face/255.0]})
     return names[result[0]]
 
-def face_with_name(frame,face,pos):
-    img = cv2.putText(frame,recog_face(face),pos, cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
-    return img
-
 read_data()
 
 #定义 holder
@@ -105,17 +100,25 @@ print(pred.shape)
 saver = tf.train.Saver()
 sess = tf.Session()
 saver.restore(sess,tf.train.latest_checkpoint(MODEL_PATH))
-print("模型载入完毕")
-cap = cv2.VideoCapture(0)
-while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
-    flag,frame = cap.read()
-    img_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-    faces = classifer.detectMultiScale(img_gray,1.1,3,minSize=(64,64))
-    for (x,y,w,h) in faces:
-        face = frame[y:y+h,x:x+w]
-        cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
-        print(recog_face(face))
-        frame = face_with_name(frame,face,(x,y))
-    cv2.imshow("face",frame)
-sess.close()
-cap.release()
+print("模型加载完毕 ")
+path_no = random.randint(0,out_size-1)
+faces_path = PATH_PREFFIX+os.listdir(PATH_PREFFIX)[path_no]
+print("随机读取: %s %s"%(faces_path,names[path_no]))
+imgs = []
+for i in os.listdir(faces_path):
+    imgs.append(cv2.imread(faces_path+"/"+i))
+
+flag = 0
+for i in range(1000):
+    img_no = random.randint(0,len(imgs)-1)
+    img = imgs[img_no]
+    name = recog_face(img)
+    print("选中%s"%os.listdir(faces_path)[img_no])
+    print("识别 %s"%name)
+    if not name == names[path_no]:
+        flag+=1
+        break
+if flag != 0 :
+    print("测试失败,%d样例未通过"%flag)
+else :
+    print("测试成功")
