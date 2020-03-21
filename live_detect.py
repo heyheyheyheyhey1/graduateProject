@@ -8,13 +8,15 @@ from sklearn.model_selection import train_test_split
 
 PATH_PREFFIX = "./faces/"
 MODEL_PATH = "./model/"
-imgs = []
-labels = []
 names = ["jt","nxw","lfl","ty"]
 size = 64 #规范图片长度
 out_size = None
 batch_size = 100
 batch_num = None
+CONV_KEEP_1 = 1
+CONV_KEEP_2 = 1
+CONV_KEEP_3 = 1
+OUT_KEEP = 1
 classifer = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
 
@@ -26,17 +28,6 @@ def read_data():
         len_ = len(os.listdir(PATH_PREFFIX))
         global out_size
         out_size = len_
-        for i in os.listdir(PATH_PREFFIX):
-            print("found path %s"%i)
-            cur_index = int(i.split("_")[0])
-            y_ = np.zeros([len_])
-            y_[cur_index]=1.0
-            for j in os.listdir(PATH_PREFFIX+i):
-                path = PATH_PREFFIX+i+"/"+j
-                print("reading %s"%path)
-                imgs.append(cv2.resize(cv2.imread(path,1),(size,size)))
-                labels.append(y_)
-
 def weight_var(shape):
     w = tf.random_normal(shape,stddev=0.1) #标准差0.1
     return tf.Variable(w)
@@ -64,28 +55,28 @@ def add_cnn_layer ():
     # 第一层池化
     pool_1 = max_pool(conv1)
     # 第一层 drop out 
-    out1 = drop_out(pool_1,1) 
+    out1 = drop_out(pool_1,CONV_KEEP_1) 
 
     # 第二层卷积
     w2 = weight_var([3,3,32,64])
     b2 = bias_var([64])
     conv2 = tf.nn.relu(conv2d(out1,w2)+b2)
     pool_2 = max_pool(conv2)
-    out2 = drop_out(pool_2,1)
+    out2 = drop_out(pool_2,CONV_KEEP_2)
 
     # 第三层卷积
     w3 = weight_var([3,3,64,64])
     b3 = bias_var([64])
     conv3 = tf.nn.relu(conv2d(out2,w3)+b3)
     pool_3 = max_pool(conv3)
-    out3 = drop_out(pool_3,1)
+    out3 = drop_out(pool_3,CONV_KEEP_3)
 
     # 全连接 
     wf = weight_var([8*8*64,512])
     bf = bias_var([512])
     out3_flat = tf.reshape(out3,[-1,8*8*64])
     flatw_plus_b = tf.nn.relu(tf.matmul(out3_flat,wf)+bf)
-    fout = drop_out(flatw_plus_b,1)
+    fout = drop_out(flatw_plus_b,OUT_KEEP)
 
     # 输出
     w_out = weight_var([512,out_size])
@@ -103,26 +94,6 @@ def face_with_name(frame,face,pos):
     return img
 
 read_data()
-
-
-print("total img count %s"%len(imgs))
-print("total label count %s"%len(labels))
-
-imgs = np.array(imgs)
-labels = np.array(labels)
-
-train_x,test_x,train_y,test_y = train_test_split(imgs,labels,test_size=0.1, random_state=random.randint(0,20))
-
-#为卷积拉平
-train_x = train_x.reshape(train_x.shape[0], size, size, 3)
-test_x = test_x.reshape(test_x.shape[0], size, size, 3)
-
-batch_num = train_x.shape[0] // batch_size
-
-#RGB小于256 转换为 0~1的浮点
-train_x = train_x.astype("float32")/255.0
-test_x = test_x.astype("float32")/255.0
-
 
 #定义 holder
 x_holder = tf.placeholder(tf.float32,[None,size,size,3]) 

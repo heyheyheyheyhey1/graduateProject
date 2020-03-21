@@ -14,7 +14,10 @@ size = 64 #规范图片长度
 out_size = None
 batch_size = 100
 batch_num = None
-
+CONV_KEEP_1 = 1
+CONV_KEEP_2 = 1
+CONV_KEEP_3 = 0.8
+OUT_KEEP = 1
 def read_data():
     if not os.path.exists(PATH_PREFFIX):
         print("img path not found")
@@ -62,28 +65,28 @@ def add_cnn_layer ():
     # 第一层池化
     pool_1 = max_pool(conv1)
     # 第一层 drop out 
-    out1 = drop_out(pool_1,0.1) 
+    out1 = drop_out(pool_1,CONV_KEEP_1) 
 
     # 第二层卷积
     w2 = weight_var([3,3,32,64])
     b2 = bias_var([64])
     conv2 = tf.nn.relu(conv2d(out1,w2)+b2)
     pool_2 = max_pool(conv2)
-    out2 = drop_out(pool_2,0.75)
+    out2 = drop_out(pool_2,CONV_KEEP_2)
 
     # 第三层卷积
     w3 = weight_var([3,3,64,64])
     b3 = bias_var([64])
     conv3 = tf.nn.relu(conv2d(out2,w3)+b3)
     pool_3 = max_pool(conv3)
-    out3 = drop_out(pool_3,1)
+    out3 = drop_out(pool_3,CONV_KEEP_3)
 
     # 全连接 
     wf = weight_var([8*8*64,512])
     bf = bias_var([512])
     out3_flat = tf.reshape(out3,[-1,8*8*64])
     flatw_plus_b = tf.nn.relu(tf.matmul(out3_flat,wf)+bf)
-    fout = drop_out(flatw_plus_b,0.8)
+    fout = drop_out(flatw_plus_b,OUT_KEEP)
 
     # 输出
     w_out = weight_var([512,out_size])
@@ -110,7 +113,7 @@ print("total label count %s"%len(labels))
 imgs = np.array(imgs)
 labels = np.array(labels)
 
-train_x,test_x,train_y,test_y = train_test_split(imgs,labels,test_size=0.1, random_state=random.randint(0,20))
+train_x,test_x,train_y,test_y = train_test_split(imgs,labels,test_size=0.2, random_state=random.randint(0,100),stratify = labels)
 
 #为卷积拉平
 train_x = train_x.reshape(train_x.shape[0], size, size, 3)
@@ -138,6 +141,7 @@ pred = add_cnn_layer()
 #损失计算
 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=pred,labels=y_holder))
 # cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_holder*tf.log(pred),axis=1))
+
 #训练
 train_step = tf.train.AdamOptimizer(0.01).minimize(cross_entropy)
 #准确度
