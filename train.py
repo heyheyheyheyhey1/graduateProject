@@ -115,7 +115,7 @@ labels = np.array(labels)
 
 train_x,test_x,train_y,test_y = train_test_split(imgs,labels,test_size=0.2, random_state=random.randint(0,100),stratify = labels)
 
-#为卷积拉平
+#为卷积设定维度
 train_x = train_x.reshape(train_x.shape[0], size, size, 3)
 test_x = test_x.reshape(test_x.shape[0], size, size, 3)
 
