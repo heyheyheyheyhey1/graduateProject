@@ -14,7 +14,8 @@ batch_num = None
 CONV_KEEP_1 = 1
 CONV_KEEP_2 = 1
 CONV_KEEP_3 = 1
-OUT_KEEP = 1
+FC1_OUT_KEEP = 1
+FC2_OUT_KEEP = 1
 classifer = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
 
@@ -69,17 +70,23 @@ def add_cnn_layer ():
     pool_3 = max_pool(conv3)
     out3 = drop_out(pool_3,CONV_KEEP_3)
 
-    # 全连接 
-    wf = weight_var([8*8*64,512])
-    bf = bias_var([512])
+    # 全连接 1
+    wf1 = weight_var([8*8*64,512])
+    bf1 = bias_var([512])
     out3_flat = tf.reshape(out3,[-1,8*8*64])
-    flatw_plus_b = tf.nn.relu(tf.matmul(out3_flat,wf)+bf)
-    fout = drop_out(flatw_plus_b,OUT_KEEP)
+    flatw_plus_b = tf.nn.relu(tf.matmul(out3_flat,wf1)+bf1)
+    f1out = drop_out(flatw_plus_b,FC1_OUT_KEEP)
+
+    # 全连接 2
+    wf2 = weight_var([512,1024])
+    bf2 = bias_var([1024])
+    f1out_mut_wf2_plus_bf2 = tf.nn.relu(tf.matmul(f1out,wf2)+bf2)
+    f2out = drop_out(f1out_mut_wf2_plus_bf2,FC2_OUT_KEEP)
 
     # 输出
-    w_out = weight_var([512,out_size])
+    w_out = weight_var([1024,out_size])
     b_out = bias_var([out_size])
-    out = tf.add(tf.matmul(fout,w_out),b_out)
+    out = tf.add(tf.matmul(f2out,w_out),b_out)
     return out
 
 def recog_face(face):
