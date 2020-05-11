@@ -76,16 +76,16 @@ def add_cnn_layer ():
     out2 = drop_out(pool_2,CONV_KEEP_2)
 
     # 第三层卷积
-    w3 = weight_var([3,3,64,64])
-    b3 = bias_var([64])
+    w3 = weight_var([3,3,64,128])
+    b3 = bias_var([128])
     conv3 = tf.nn.relu(conv2d(out2,w3)+b3)
     pool_3 = max_pool(conv3)
     out3 = drop_out(pool_3,CONV_KEEP_3)
 
     # 全连接 1
-    wf1 = weight_var([8*8*64,512])
+    wf1 = weight_var([8*8*128,512])
     bf1 = bias_var([512])
-    out3_flat = tf.reshape(out3,[-1,8*8*64])
+    out3_flat = tf.reshape(out3,[-1,8*8*128])
     flatw_plus_b = tf.nn.relu(tf.matmul(out3_flat,wf1)+bf1)
     f1out = drop_out(flatw_plus_b,FC1_OUT_KEEP)
 
@@ -165,7 +165,7 @@ with tf.Session() as sess:
             X = train_x[j*batch_size:(j+1)*batch_size] 
             Y = train_y[j*batch_size:(j+1)*batch_size]
             sess.run(train_step,feed_dict={x_holder:X,y_holder:Y})
-        print(get_acc())
+        print("第%d次训练，准确率：%f"%(i,get_acc()))
     if get_acc()<0.9:
         print("准确度小于0.9,训练失败")
     else :

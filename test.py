@@ -63,16 +63,16 @@ def add_cnn_layer ():
     out2 = drop_out(pool_2,CONV_KEEP_2)
 
     # 第三层卷积
-    w3 = weight_var([3,3,64,64])
-    b3 = bias_var([64])
+    w3 = weight_var([3,3,64,128])
+    b3 = bias_var([128])
     conv3 = tf.nn.relu(conv2d(out2,w3)+b3)
     pool_3 = max_pool(conv3)
     out3 = drop_out(pool_3,CONV_KEEP_3)
 
     # 全连接 1
-    wf1 = weight_var([8*8*64,512])
+    wf1 = weight_var([8*8*128,512])
     bf1 = bias_var([512])
-    out3_flat = tf.reshape(out3,[-1,8*8*64])
+    out3_flat = tf.reshape(out3,[-1,8*8*128])
     flatw_plus_b = tf.nn.relu(tf.matmul(out3_flat,wf1)+bf1)
     f1out = drop_out(flatw_plus_b,FC1_OUT_KEEP)
 
