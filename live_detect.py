@@ -89,13 +89,15 @@ def add_cnn_layer ():
     out = tf.add(tf.matmul(f2out,w_out),b_out)
     return out
 
-def recog_face(face):
+def get_face_info(face):
     face = cv2.resize(face,(size,size))
-    result = sess.run(pred,feed_dict={x_holder:[face/255.0]})
-    return names[result[0]]
+    result,cur_acc = sess.run((pred,acc),feed_dict={x_holder:[face/255.0]})
+    return names[result[0]],cur_acc
 
-def face_with_name(frame,face,pos):
-    img = cv2.putText(frame,recog_face(face),pos, cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
+def img_with_name(frame,face,pos):
+    name,acc =  get_face_info(face)
+    st = "%s : %.3gf%%"%(name,acc*100)
+    img = cv2.putText(frame,st,pos, cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
     return img
 
 read_data()
@@ -108,6 +110,7 @@ out = add_cnn_layer()
 print(out.shape)
 pred = tf.argmax(out,1)
 print(pred.shape)
+acc = tf.div(tf.reduce_max(out),tf.reduce_sum(out))
 
 saver = tf.train.Saver()
 sess = tf.Session()
@@ -117,12 +120,11 @@ cap = cv2.VideoCapture(0)
 while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
     flag,frame = cap.read()
     img_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-    faces = classifer.detectMultiScale(img_gray,1.3,5,minSize=(64,64))
+    faces = classifer.detectMultiScale(img_gray,1.15,6,minSize=(64,64))
     for (x,y,w,h) in faces:
         face = frame[y:y+h,x:x+w]
         cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
-        print(recog_face(face))
-        frame = face_with_name(frame,face,(x,y))
+        frame = img_with_name(frame,face,(x,y))
     cv2.imshow("face",frame)
 sess.close()
 cap.release()

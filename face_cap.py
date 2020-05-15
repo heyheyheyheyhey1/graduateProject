@@ -23,7 +23,7 @@ tag = 0
 while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
     (flag,frame) = cap.read()
     frame_gray = cv2.cvtColor(frame,cv2.COLOR_RGB2GRAY)
-    faces = classifer.detectMultiScale(frame_gray,1.3,5)
+    faces = classifer.detectMultiScale(frame_gray,1.15,6,minSize=(64,64))
     if len(faces) == 1:
         (x,y,w,h) = faces[0]
         face = frame[y:y+h,x:x+w]
