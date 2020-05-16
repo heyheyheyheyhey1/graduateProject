@@ -91,15 +91,20 @@ def add_cnn_layer ():
 
 def get_face_info(face):
     face = cv2.resize(face,(size,size))
-    result,cur_acc = sess.run((pred,acc),feed_dict={x_holder:[face/255.0]})
-    return names[result[0]],cur_acc
+    result,out_ = sess.run((pred,out),feed_dict={x_holder:[face/255.0]})
+    return names[result[0]],compute_acc(out_)
 
-def img_with_name(frame,face,pos):
-    name,acc =  get_face_info(face)
-    st = "%s : %.3gf%%"%(name,acc*100)
-    img = cv2.putText(frame,st,pos, cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 2)
+def img_with_face_info(frame,face,pos):
+    name,acc = get_face_info(face)
+    st = "%s : %.3f%%"%(name,acc*100)
+    img = cv2.putText(frame,st,pos, cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     return img
 
+def compute_acc(out_):
+    out_ [out_<0]=0
+    print(out_[0])
+    acc_= np.max(out_)/np.sum(out_)
+    return acc_
 read_data()
 
 #定义 holder
@@ -110,8 +115,6 @@ out = add_cnn_layer()
 print(out.shape)
 pred = tf.argmax(out,1)
 print(pred.shape)
-acc = tf.div(tf.reduce_max(out),tf.reduce_sum(out))
-
 saver = tf.train.Saver()
 sess = tf.Session()
 saver.restore(sess,tf.train.latest_checkpoint(MODEL_PATH))
@@ -120,11 +123,11 @@ cap = cv2.VideoCapture(0)
 while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
     flag,frame = cap.read()
     img_gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-    faces = classifer.detectMultiScale(img_gray,1.15,6,minSize=(64,64))
+    faces = classifer.detectMultiScale(img_gray,1.1,5,minSize=(100,100))
     for (x,y,w,h) in faces:
         face = frame[y:y+h,x:x+w]
         cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
-        frame = img_with_name(frame,face,(x,y))
+        frame = img_with_face_info(frame,face,(x,y))
     cv2.imshow("face",frame)
 sess.close()
 cap.release()

@@ -124,7 +124,6 @@ for i in range(1000):
     print("识别 %s"%name)
     if not name == names[path_no]:
         flag+=1
-        break
 if flag != 0 :
     print("测试失败,%d样例未通过"%flag)
 else :

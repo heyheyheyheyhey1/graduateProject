@@ -12,13 +12,13 @@ imgs = []
 labels = []
 size = 64 #规范图片长度
 out_size = None
-batch_size = 100
+batch_size = 50
 batch_num = None
 CONV_KEEP_1 = 1
 CONV_KEEP_2 = 1
 CONV_KEEP_3 = 1
-FC1_OUT_KEEP = 1
-FC2_OUT_KEEP = 0.8
+FC1_OUT_KEEP = 0.8
+FC2_OUT_KEEP = 0.75
 def read_data():
     if not os.path.exists(PATH_PREFFIX):
         print("img path not found")

@@ -23,9 +23,8 @@ tag = 0
 while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
     (flag,frame) = cap.read()
     frame_gray = cv2.cvtColor(frame,cv2.COLOR_RGB2GRAY)
-    faces = classifer.detectMultiScale(frame_gray,1.15,6,minSize=(64,64))
-    if len(faces) == 1:
-        (x,y,w,h) = faces[0]
+    faces = classifer.detectMultiScale(frame_gray,1.1,5,minSize=(100,100))
+    for (x,y,w,h) in faces:
         face = frame[y:y+h,x:x+w]
         cv2.imwrite(PATH+"/img_%02d.jpg"%tag,face)
         cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
