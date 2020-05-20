@@ -3,7 +3,7 @@ import tensorflow as tf
 import os
 import numpy as np
 import random
-
+import time
 PATH_PREFFIX = "./faces/"
 MODEL_PATH = "./model/"
 names = ["jt","nxw","lfl","ty"]
@@ -105,6 +105,7 @@ def compute_acc(out_):
     print(out_[0])
     acc_= np.max(out_)/np.sum(out_)
     return acc_
+    
 read_data()
 
 #定义 holder
@@ -127,7 +128,10 @@ while(cap.isOpened() and cv2.waitKey(2)!=ord("q")):
     for (x,y,w,h) in faces:
         face = frame[y:y+h,x:x+w]
         cv2.rectangle(frame,(x,y),(x+w,y+h),(0,0,255),2)
+        start_time = time.time()
         frame = img_with_face_info(frame,face,(x,y))
+        end_time = time.time()
+        print("费时 %.5f"%(end_time-start_time))
     cv2.imshow("face",frame)
 sess.close()
 cap.release()

@@ -17,8 +17,8 @@ batch_num = None
 CONV_KEEP_1 = 1
 CONV_KEEP_2 = 1
 CONV_KEEP_3 = 1
-FC1_OUT_KEEP = 0.8
-FC2_OUT_KEEP = 0.75
+FC1_OUT_KEEP = 0.3
+FC2_OUT_KEEP = 0.5
 def read_data():
     if not os.path.exists(PATH_PREFFIX):
         print("img path not found")
@@ -120,7 +120,7 @@ print("total label count %s"%len(labels))
 imgs = np.array(imgs)
 labels = np.array(labels)
 
-train_x,test_x,train_y,test_y = train_test_split(imgs,labels,test_size=0.2, random_state=random.randint(0,100),stratify = labels)
+train_x,test_x,train_y,test_y = train_test_split(imgs,labels,test_size=0.4, random_state=random.randint(0,100),stratify = labels)
 
 #为卷积设定维度
 train_x = train_x.reshape(train_x.shape[0], size, size, 3)
@@ -160,14 +160,18 @@ init = tf.global_variables_initializer()
 print("数据堆个数%d"%batch_num)
 with tf.Session() as sess:
     sess.run(init)
+    start_time = time.time()
     for i in range(100):
         for j in range(batch_num):
             X = train_x[j*batch_size:(j+1)*batch_size] 
             Y = train_y[j*batch_size:(j+1)*batch_size]
             sess.run(train_step,feed_dict={x_holder:X,y_holder:Y})
-        print("第%d次训练，准确率：%f"%(i,get_acc()))
+        print("第%d次训练，准确率：%f"%(i+1,get_acc()))
+    end_time = time.time()
     if get_acc()<0.9:
         print("准确度小于0.9,训练失败")
     else :
-        save_model(sess)
+        # save_model(sess)
+        print("总训练图片数量 %s 张"%len(imgs))
+        print("耗费时间%.4f 秒"%(end_time-start_time))
         print("训练成功,准确度为 %f"%get_acc())
